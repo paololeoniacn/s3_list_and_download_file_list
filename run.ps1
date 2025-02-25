@@ -53,7 +53,7 @@ foreach ($disk in $disks) {
 Write-Host "`n===== FINE INFORMAZIONI ====="
 
 # Avvia l'app 
-Write-Host "🚀 Avvio dell'app ..."
+Write-Host "🚀 Avvio dell'app ..." -ForegroundColor Green
 python main.py
 
 deactivate
