@@ -29,7 +29,10 @@ session = boto3.Session(
 s3 = session.client("s3")
 
 def list_s3_files(bucket, time_range=None):
-    logger.info(f"Recupero lista file da bucket: {bucket}, senza filtri di prefisso")
+    if time_range==None:
+        logger.info(f"Recupero lista file da bucket: {bucket},\nsenza filtri di prefisso,\nsenza TIME_RANGE")
+    else:
+        logger.info(f"Recupero lista file da bucket: {bucket},\nsenza filtri di prefisso,\nTIME_RANGE = {time_range}")
     files = []
     paginator = s3.get_paginator("list_objects_v2")
     
@@ -55,7 +58,7 @@ def download_s3_file(bucket, key, download_dir):
     try:
         logger.debug(f"Scaricamento file: {key}")
         s3.download_file(bucket, key, local_filename)
-        logger.debug(f"File scaricato: {local_filename}")
+        logger.info(f"File scaricato: {local_filename}")
         return local_filename
     except Exception as e:
         logger.error(f"Errore nel download {key}: {e}")
@@ -75,7 +78,8 @@ def clean_file(filename, cleaned_dir, original_key):
 
 def main():
     # Lista dei file nel bucket
-    s3_files = list_s3_files(BUCKET_NAME, TIME_RANGE)
+    # s3_files = list_s3_files(BUCKET_NAME, TIME_RANGE)
+    s3_files = list_s3_files(BUCKET_NAME)
     
     # Leggi la lista dei nomi file da cercare
     with open(LIST_FILE, "r") as f:
@@ -84,23 +88,29 @@ def main():
     missing_files = []
     
     # Processa i file trovati in S3
+    counter = 0
     for s3_file in s3_files:
         if any(item in s3_file for item in search_list):
+            counter = counter + 1
             logger.debug(f"Match trovato: {s3_file}")
             local_file = download_s3_file(BUCKET_NAME, s3_file, DOWNLOAD_DIR)
             if local_file:
                 clean_file(local_file, CLEANED_DIR, s3_file)
             else:
                 missing_files.append(s3_file)
-
-    if missing_files:
-        logger.warning(f"⚠️ File mancanti {len(missing_files)} su {len(search_list)}")
-        with open(MISSING_FILES_LOG, "w") as f:
-            for missing in missing_files:
-                f.write(missing + "\n")
-        logger.info(f"✅ Lista file mancanti salvata in {MISSING_FILES_LOG}")
+    
+    if counter > 0:
+        logger.error(f"✅ Trovati {counter} elementi su {len(search_list)}")
+        if missing_files:
+            logger.warning(f"⚠️ File mancanti {len(missing_files)} su {len(search_list)}")
+            with open(MISSING_FILES_LOG, "w") as f:
+                for missing in missing_files:
+                    f.write(missing + "\n")
+            logger.info(f"✅ Lista file mancanti salvata in {MISSING_FILES_LOG}")
+        else:
+            logger.info(f"✅ Tutti i {len(search_list)} file richiesti sono stati scaricati e puliti con successo.")
     else:
-        logger.info(f"✅ Tutti i {len(search_list)} file richiesti sono stati scaricati e puliti con successo.")
-
+        logger.error(f"❌ Nessun elemento dei {len(search_list)} presenti sulla lista trovato")
+    
 if __name__ == "__main__":
     main()
