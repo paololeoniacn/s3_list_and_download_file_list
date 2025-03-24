@@ -8,6 +8,16 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+def clear_aws_env_vars():
+    """Rimuove dinamicamente tutte le variabili che iniziano con "S3_L_D_, se presenti."""
+    logger.info("Rimuovo dinamicamente tutte le variabili che iniziano con S3_L_D_, se presenti")
+    S3_L_D_vars = [var for var in os.environ.keys() if var.startswith("S3_L_D_")]
+    
+    for var in S3_L_D_vars:
+        print(f"Rimuovo variabile di ambiente CLS: {var}")
+        os.environ.pop(var)
+          
+clear_aws_env_vars()
 # Carica le variabili d'ambiente dal file .env
 from dotenv import load_dotenv
 load_dotenv()  
@@ -22,9 +32,9 @@ MISSING_FILES_LOG = "missing_files.txt"
 
 # Connessione a S3
 session = boto3.Session(
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    aws_session_token=os.getenv("AWS_SESSION_TOKEN")
+    aws_access_key_id=os.getenv("S3_L_D_AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("S3_L_D_AWS_SECRET_ACCESS_KEY"),
+    aws_session_token=os.getenv("S3_L_D_AWS_SESSION_TOKEN")
 )
 s3 = session.client("s3")
 
